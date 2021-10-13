@@ -897,30 +897,36 @@ scaleGrob <- function(g){
   res
 }
 
-removeXAxis <- function(g){
-  if(g$name == "panel.ori"){
-    g$grobs[[1]]$children[[1]]$children$layout <-
-      removeXAxis(g$grobs[[1]]$children[[1]]$children$layout)
-  }else{
-    idx <- findGrobs(g, c("xlab", "axis-b", "title"))
-    idx <- sort(unique(c(g$layout$t[idx], g$layout$b[idx])))
-    idx <- setdiff(1:nrow(g), idx)
-    g <- g[idx, ]
-  }
-  g
+gtable_filter_grobs <- findGrobs
+
+gtable_remove_grobs <- function(gtable, remove) {
+    if (is.character(remove))
+        index <- gtable_filter_grobs(gtable, remove)
+    else if (is.logical(remove))
+        index <- remove
+
+    keep <- gtable$layout$name[!index]
+    gtable::gtable_filter(gtable, paste0(keep, collapse="|"))
 }
 
-removeYAxis <- function(g){
-  if(g$name == "panel.ori"){
-    g$grobs[[1]]$children[[1]]$children$layout <-
-      removeYAxis(g$grobs[[1]]$children[[1]]$children$layout)
-  }else{
-    idx <- findGrobs(g, c("ylab", "axis-l"))
-    idx <- sort(unique(c(g$layout$l[idx], g$layout$r[idx])))
-    idx <- setdiff(1:ncol(g), idx)
-    g <- g[,idx]
-  }
-  g
+removeAxis <- function(gtable, remove) {
+    if (gtable$name == "panel.ori") {
+        gt <- gtable$grobs[[1]]$children[[1]]$children$layout
+        gt <- removeAxis(gt, remove)
+    } else {
+        gtable <- gtable_remove_grobs(gtable, remove)
+    }
+    gtable
+}
+
+removeXAxis <- function(gtable) {
+    remove <- c("xlab", "axis-b", "title")
+    removeAxis(gtable, remove)
+}
+
+removeYAxis <- function(gtable) {
+    remove <- c("ylab", "axis-l")
+    removeAxis(gtable, remove)
 }
 
 getHeight <- function(dts){
